@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer.AuthorizedUrl;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,14 +30,19 @@ public class SecurityConfig {
 	
 	private final CustomAccessDenieHandler customAccessDenieHandler;
 	
+	private final CustomLogoutHandler customLogoutHandler;
+	
 
 	public SecurityConfig(UserDetailsServiceImp userDetailsServiceImp,
 			                            JwtAuthenticationFilter jwtAuthenticationFilter,
-			                            CustomAccessDenieHandler customAccessDenieHandler) {
+			                            CustomAccessDenieHandler customAccessDenieHandler,
+			                            CustomLogoutHandler customLogoutHandler) {
 		
 		this.userDetailsServiceImp = userDetailsServiceImp;
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 		this.customAccessDenieHandler=customAccessDenieHandler;
+		this.customLogoutHandler=customLogoutHandler;
+		
 	}
 
 
@@ -48,6 +54,7 @@ public class SecurityConfig {
 				.csrf(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(req->req.requestMatchers("/login/**" , "/register/**")
 				.permitAll()
+				.requestMatchers("admin_only/**").hasAuthority("ADMIN")
 				.anyRequest()
 				.authenticated()
 				).userDetailsService(userDetailsServiceImp)
@@ -55,6 +62,10 @@ public class SecurityConfig {
 						.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
 				.sessionManagement(session-> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(jwtAuthenticationFilter,UsernamePasswordAuthenticationFilter.class)
+				.logout(l-> l.logoutUrl("/logout")
+						.addLogoutHandler(customLogoutHandler)
+						.logoutSuccessHandler((request,response,authentication)->SecurityContextHolder.clearContext()
+						))
 				.build();
 				
 				

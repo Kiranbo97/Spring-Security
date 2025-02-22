@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.security.model.User;
+import com.security.repository.TokenRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -28,8 +29,15 @@ public class JwtService {
 	
 	
 	private final String SECRET_KEY ="7e4d3ecf6bd3f7579e4bd5d94e1bca45d4f6e1723b23ee375bf719f6505c080c";
+	
+	private final TokenRepository tokenRepository;
+	
 
 	
+	public JwtService(TokenRepository tokenRepository) {
+		this.tokenRepository = tokenRepository;
+	}
+
 	public String extractUserName(String token) {
 		// now let's get the user name from the cliam 
 		
@@ -45,7 +53,9 @@ public class JwtService {
 		
 		String userName=extractUserName(token);
 		
-		return  (userName.equals(user.getUsername())) && !isTokenExpired(token);
+		boolean isValidToken=tokenRepository.findByToken(token).map(t-> !t.isLoggedOut()).orElse(false);
+		
+		return  (userName.equals(user.getUsername())) && !isTokenExpired(token) && isValidToken;
 		
 		// we also need to check if the token is expired 
 		// remember we have added expiration to our token so adding a check logical and is token expire  

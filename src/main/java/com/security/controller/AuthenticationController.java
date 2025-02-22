@@ -29,7 +29,7 @@ public class AuthenticationController {
 		System.out.println("Register API hit with user: " + request.getUserName());
 	    System.out.println("Request Body: " + request); // Log the entire request object/
 		
-		return ResponseEntity.ok(authService.authenticate(request));
+		return ResponseEntity.ok(authService.register(request));
 	}
 
 	@PostMapping("/login")
